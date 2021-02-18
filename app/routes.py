@@ -24,7 +24,7 @@ def index():
             'body': 'Last Jedi was a bad movie!'
         }
     ]
-    return render_template('index.html', title='Home', user=user, posts=posts)
+    return render_template('index.html', title='Home', posts=posts)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -41,7 +41,7 @@ def login():
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('index')
-        return redirect(url_for(next_page))
+        return redirect(next_page)
     return  render_template('login.html', title='Sign In', form=form)
 
 @app.route('/logout')
