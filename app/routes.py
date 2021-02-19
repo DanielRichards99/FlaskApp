@@ -22,8 +22,8 @@ def before_request():
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
 
-@app.route('/', methods=['GET', ['POST']])
-@app.route('/index', methods=['GET', ['POST']])
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
 @login_required
 def index():
     form = PostForm()
@@ -33,19 +33,9 @@ def index():
         db.session.commit()
         flash('Your post is now live!')
         return redirect(url_for('index'))
-
-    posts = [
-        {
-            'author': {'username': 'Liam'},
-            'body': 'Good day today!'
-        },
-        {
-            'author': {'username': 'Andrew'},
-            'body': 'Last Jedi was a bad movie!'
-        }
-    ]
-
-    return render_template('index.html', title='Home', posts=posts)
+    posts = current_user.followed_posts().all()
+    return render_template("index.html", title='Home Page', form=form,
+                           posts=posts)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -149,4 +139,12 @@ def unfollow(username):
         return redirect(url_for('user', username=username))
     else:
         return redirect(url_for('index'))
+
+
+@app.route('/explore')
+@login_required
+def explore():
+    posts = Post.query.order_by(Post.timestamp.desc()).all()
+    return render_template('index.html', title='Explore', posts=posts)
+
 
