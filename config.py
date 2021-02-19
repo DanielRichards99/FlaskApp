@@ -13,3 +13,5 @@ class Config(object):
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     ADMINS = ['daniel.richards@landregistry.gov.uk']
+
+    POSTS_PER_PAGE = 3
