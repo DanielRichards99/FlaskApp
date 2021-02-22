@@ -1,10 +1,12 @@
 from flask import render_template, flash, redirect, url_for
 from flask import request
+from flask import g
 from werkzeug.urls import url_parse
 from flask_login import current_user, login_user
 from flask_login import logout_user
 from flask_login import login_required
 from flask_babel import _
+from flask_babel import get_locale
 from app import app
 from app import db
 from app.forms import LoginForm
@@ -22,6 +24,8 @@ def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
+
+        g.locale = str(get_locale())
 
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
