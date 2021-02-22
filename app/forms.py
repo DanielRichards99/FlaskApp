@@ -1,18 +1,19 @@
 from flask_wtf import FlaskForm
+from flask_babel import lazy_gettext as _l
 from wtforms import StringField, TextAreaField, PasswordField, BooleanField, SubmitField
 from wtforms.validators import ValidationError, DataRequired, Length, Email, EqualTo
 from app.models import User
 
 
 class LoginForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
+    username = StringField(_l('Username'), validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     remember_me = BooleanField('Remember Me')
     submit = SubmitField('Sign In')
 
 
 class RegistrationForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
+    username = StringField(_l('Username'), validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     password2 = PasswordField(
