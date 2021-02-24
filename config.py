@@ -18,7 +18,10 @@ class Config(object):
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     ADMINS = ['daniel.richards@landregistry.gov.uk']
 
-    POSTS_PER_PAGE = 25
+    POSTS_PER_PAGE = 10
 
     # Keep track of supported languages
     LANGUAGES = ['en', 'es']
+
+    # ElasticSearch
+    ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL')
