@@ -39,8 +39,13 @@
                     <li>
                         <a href="{{ url_for('main.messages') }}">
                             {{ _('Messages') }}
+                            {% set new_messages = current_user.new_messages() %}
+                            {% if new_messages %}
+                            <span class="badge">{{ new_messages }}</span>
+                            {% endif %}
                         </a>
                     </li>
+
                     ...
                     {% endif %}
                     {% if current_user.is_anonymous %}
