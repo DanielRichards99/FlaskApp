@@ -1,6 +1,7 @@
-from flask import render_template, flash, redirect, url_for
+from flask import render_template, flash, redirect, url_for, jsonify
 from flask import request
 from flask import g
+from urllib3.connection import ConnectionError
 from werkzeug.urls import url_parse
 from flask_login import current_user, login_user
 from flask_login import logout_user
@@ -18,6 +19,7 @@ from app.main.forms import MessageForm
 from app.models import User
 from app.models import Post
 from app.models import Message
+from app.models import Notification
 
 from datetime import datetime
 
@@ -43,13 +45,13 @@ def index():
         flash(_('Your post is now live!'))
         return redirect(url_for('main.index'))
     page = request.args.get('page', 1, type=int)
-    posts = Post.query.order_by(Post.timestamp.desc()).paginate(
+    posts = current_user.followed_posts().paginate(
         page, current_app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('main.index', page=posts.next_num) \
         if posts.has_next else None
-    prev_url = url_for('main.index', page=posts.next_num) \
+    prev_url = url_for('main.index', page=posts.prev_num) \
         if posts.has_prev else None
-    return render_template("index.html", title='Home Page', form=form,
+    return render_template('index.html', title=_('Home'), form=form,
                            posts=posts.items, next_url=next_url,
                            prev_url=prev_url)
 
@@ -72,17 +74,20 @@ def explore():
 @bp.route('/user/<username>')
 @login_required
 def user(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    page = request.args.get('page', 1, type=int)
-    posts = user.posts.order_by(Post.timestamp.desc()).paginate(
-        page, current_app.config['POSTS_PER_PAGE'], False)
-    next_url = url_for('main.user', username=user.username, page=posts.next_num) \
-        if posts.has_next else None
-    prev_url = url_for('main.user', username=user.username, page=posts.prev_num) \
-        if posts.has_prev else None
-    form = EmptyForm()
-    return render_template('user.html', user=user, posts=posts.items,
-                           next_url=next_url, prev_url=prev_url, form=form)
+    try:
+        user = User.query.filter_by(username=username).first_or_404()
+        page = request.args.get('page', 1, type=int)
+        posts = user.posts.order_by(Post.timestamp.desc()).paginate(
+            page, current_app.config['POSTS_PER_PAGE'], False)
+        next_url = url_for('main.user', username=user.username, page=posts.next_num) \
+            if posts.has_next else None
+        prev_url = url_for('main.user', username=user.username, page=posts.prev_num) \
+            if posts.has_prev else None
+        form = EmptyForm()
+        return render_template('user.html', user=user, posts=posts.items,
+                               next_url=next_url, prev_url=prev_url, form=form)
+    except ConnectionError as e:
+        return render_template('errors/500.html')
 
 
 @bp.route('/user/<username>/popup')
@@ -175,6 +180,7 @@ def send_message(recipient):
         msg = Message(author=current_user, recipient=user,
                       body=form.message.data)
         db.session.add(msg)
+        user.add_notification('unread_message_count', user.new_messages())
         db.session.commit()
         flash(_('Your message has been sent.'))
         return redirect(url_for('main.user', username=recipient))
@@ -186,6 +192,7 @@ def send_message(recipient):
 @login_required
 def messages():
     current_user.last_message_read_time = datetime.utcnow()
+    current_user.add_notification('unread_message_count', 0)
     db.session.commit()
     page = request.args.get('page', 1, type=int)
     messages = current_user.messages_received.order_by(
@@ -197,3 +204,15 @@ def messages():
         if messages.has_prev else None
     return render_template('messages.html', messages=messages.items,
                            next_url=next_url, prev_url=prev_url)
+
+@bp.route('/notifications')
+@login_required
+def notifications():
+    since = request.args.get('since', 0.0, type=float)
+    notifications = current_user.notifications.filter(
+        Notification.timestamp > since).order_by(Notification.timestamp.asc())
+    return jsonify([{
+        'name': n.name,
+        'data': n.get_data(),
+        'timestamp': n.timestamp
+    } for n in notifications])
