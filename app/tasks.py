@@ -1,8 +1,10 @@
 import time
+import sys
 from rq import get_current_job
 from app import create_app
 from app import db
 from app.models import Task
+from app.models import User, Post
 
 app = create_app()
 app.app_context().push()
@@ -33,3 +35,22 @@ def _set_task_progress(progress):
             task.complete = True
             db.session.commit()
 
+
+def export_posts(user_id):
+    try:
+        user = User.query.get(user_id)
+        _set_task_progress(0)
+        data = []
+        i = 0
+        total_posts = user.posts.count()
+        for post in user.posts.order_by(Post.timestamp.asc()):
+            data.append({'body': post.body,
+                         'timestamp': post.timestamp.isoformat() + 'Z'})
+            time.sleep(5)
+            i += 1
+            _set_task_progress(100 * 1 // total_posts)
+
+    except:
+        app.logger.error('Unhandled exception', exc_info=sys.exc_info())
+    finally:
+        _set_task_progress(100)
